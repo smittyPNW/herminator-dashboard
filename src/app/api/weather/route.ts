@@ -3,11 +3,53 @@
  * GET /api/weather
  * Uses ipapi.co for location + Open-Meteo for weather (free, no API key)
  * Temperature in Fahrenheit
+ *
+ * Optional env var overrides (set in .env.local to pin a location):
+ *   WEATHER_LAT, WEATHER_LON, WEATHER_CITY, WEATHER_TZ
  */
 import { NextResponse } from "next/server";
 
 let cache: { data: unknown; ts: number } | null = null;
 const CACHE_DURATION = 10 * 60 * 1000;
+
+interface GeoLocation {
+  latitude: number;
+  longitude: number;
+  city: string;
+  timezone: string;
+}
+
+async function resolveLocation(): Promise<GeoLocation> {
+  // Prefer explicit env var overrides so users can pin a location in .env.local
+  // without hardcoding it in source.
+  const lat = process.env.WEATHER_LAT;
+  const lon = process.env.WEATHER_LON;
+  const city = process.env.WEATHER_CITY;
+  const tz = process.env.WEATHER_TZ;
+
+  if (lat && lon && city && tz) {
+    return {
+      latitude: parseFloat(lat),
+      longitude: parseFloat(lon),
+      city,
+      timezone: tz,
+    };
+  }
+
+  // Fall back to IP-based geolocation (works for local / home-network installs).
+  const res = await fetch("https://ipapi.co/json/", {
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) throw new Error(`ipapi.co returned ${res.status}`);
+  const geo = await res.json();
+  if (!geo.latitude || !geo.longitude) throw new Error("ipapi.co returned no coordinates");
+  return {
+    latitude: geo.latitude,
+    longitude: geo.longitude,
+    city: geo.city || "Unknown",
+    timezone: geo.timezone || "UTC",
+  };
+}
 
 const WMO_CODES: Record<number, { label: string; emoji: string }> = {
   0: { label: "Clear sky", emoji: "☀️" },
@@ -39,11 +81,7 @@ export async function GET() {
   }
 
   try {
-    // Zip code 97128 - McMinnville, OR
-    const latitude = 45.2100;
-    const longitude = -123.1986;
-    const city = "McMinnville";
-    const timezone = "America/Los_Angeles";
+    const { latitude, longitude, city, timezone } = await resolveLocation();
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation&daily=temperature_2m_max,temperature_2m_min,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=${encodeURIComponent(timezone)}&forecast_days=3`;
 
