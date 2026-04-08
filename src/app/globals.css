@@ -24,10 +24,7 @@ html {
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(255, 103, 197, 0.38) 0%, rgba(255, 103, 197, 0.1) 16%, transparent 34%),
-    radial-gradient(circle at 70% 18%, rgba(255, 182, 87, 0.5) 0%, rgba(255, 182, 87, 0.08) 14%, transparent 28%),
-    linear-gradient(180deg, #210638 0%, #140726 34%, #0e0620 54%, #0b041a 100%);
+  background: linear-gradient(180deg, #16071f 0%, #11061c 34%, #090312 100%);
   color: var(--color-text-100);
   font-family: "SF Pro Display", "Inter", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -36,42 +33,30 @@ body {
   overflow-x: hidden;
 }
 
-body::before {
+.dashboard-body::before {
   content: "";
   position: fixed;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 79, 216, 0.14) 0%, transparent 30%),
-    repeating-linear-gradient(
-      to right,
-      rgba(57, 230, 255, 0.14) 0,
-      rgba(57, 230, 255, 0.14) 2px,
-      transparent 2px,
-      transparent 74px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255, 79, 216, 0.14) 0,
-      rgba(255, 79, 216, 0.14) 2px,
-      transparent 2px,
-      transparent 74px
-    );
-  clip-path: polygon(0 62%, 100% 62%, 100% 100%, 0 100%);
-  opacity: 0.6;
-  transform: perspective(1100px) rotateX(82deg) scale(1.5) translateY(24%);
-  transform-origin: top center;
+    linear-gradient(180deg, rgba(12, 3, 20, 0.28) 0%, rgba(12, 3, 20, 0.12) 28%, rgba(4, 1, 10, 0.18) 100%),
+    url("/images/dashboard-synthwave-bg.jpg") center top / cover no-repeat;
+  opacity: 1;
   pointer-events: none;
   z-index: 0;
 }
 
-body::after {
+.dashboard-body::after {
   content: "";
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 24%, rgba(255, 79, 216, 0.18), transparent 20%),
-    radial-gradient(circle at 76% 24%, rgba(255, 79, 216, 0.18), transparent 20%),
-    linear-gradient(180deg, rgba(6, 1, 16, 0) 0%, rgba(6, 1, 16, 0.28) 58%, rgba(6, 1, 16, 0.72) 100%);
+    radial-gradient(circle at 50% 22%, rgba(255, 187, 89, 0.16), transparent 18%),
+    linear-gradient(180deg, rgba(7, 1, 16, 0.12) 0%, rgba(7, 1, 16, 0.34) 58%, rgba(3, 1, 8, 0.82) 100%),
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.035) 0 1px,
+      transparent 1px 4px
+    );
   pointer-events: none;
   z-index: 0;
 }
@@ -134,130 +119,21 @@ textarea {
   min-height: 100vh;
 }
 
-.sunset-halo {
-  position: absolute;
-  top: 1rem;
-  left: 50%;
-  width: min(42vw, 580px);
-  height: min(42vw, 580px);
-  transform: translateX(-28%);
-  border-radius: 999px;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255, 177, 74, 1) 0 16px,
-      rgba(255, 177, 74, 1) 16px 18px,
-      rgba(255, 147, 76, 0.92) 18px 34px
-    );
-  box-shadow:
-    0 0 80px rgba(255, 79, 216, 0.18),
-    0 0 130px rgba(255, 177, 74, 0.22);
-  opacity: 0.95;
-  filter: saturate(1.1);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.retro-palms {
-  position: absolute;
-  top: 2.5rem;
-  width: 220px;
-  height: 210px;
-  opacity: 0.28;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.retro-palms::before,
-.retro-palms::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 8%, rgba(255, 79, 216, 0.8) 0 4px, transparent 5px),
-    linear-gradient(to bottom, rgba(255, 79, 216, 0.95), rgba(255, 79, 216, 0.35)) center 70% / 8px 120px no-repeat,
-    linear-gradient(26deg, transparent 46%, rgba(255, 79, 216, 0.9) 47% 53%, transparent 54%) 50% 28% / 160px 70px no-repeat,
-    linear-gradient(-26deg, transparent 46%, rgba(255, 79, 216, 0.9) 47% 53%, transparent 54%) 50% 28% / 160px 70px no-repeat,
-    linear-gradient(58deg, transparent 46%, rgba(255, 79, 216, 0.9) 47% 53%, transparent 54%) 50% 28% / 130px 64px no-repeat,
-    linear-gradient(-58deg, transparent 46%, rgba(255, 79, 216, 0.9) 47% 53%, transparent 54%) 50% 28% / 130px 64px no-repeat;
-  filter: drop-shadow(0 0 18px rgba(255, 79, 216, 0.4));
-}
-
-.retro-palms.left {
-  left: 28%;
-}
-
-.retro-palms.right {
-  right: 8%;
-  transform: scaleX(-1);
-}
-
-.retro-mountains {
-  position: absolute;
-  bottom: 20%;
-  height: 240px;
-  width: 42%;
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.retro-mountains::before,
-.retro-mountains::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  clip-path: polygon(0 100%, 18% 58%, 31% 76%, 44% 42%, 61% 74%, 78% 36%, 100% 100%);
-}
-
-.retro-mountains::before {
-  background: linear-gradient(180deg, rgba(57, 230, 255, 0.06), rgba(57, 230, 255, 0.22));
-  box-shadow: 0 0 26px rgba(57, 230, 255, 0.18);
-}
-
-.retro-mountains::after {
-  inset: 1px;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      rgba(57, 230, 255, 0.28) 0 1px,
-      transparent 1px 18px
-    );
-  filter: drop-shadow(0 0 10px rgba(57, 230, 255, 0.28));
-}
-
-.retro-mountains.left {
-  left: 2%;
-}
-
-.retro-mountains.right {
-  right: 2%;
-  transform: scaleX(-1);
-}
-
 .hero-haze {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 22%, rgba(255, 177, 74, 0.16), transparent 20%),
-    radial-gradient(circle at 18% 28%, rgba(255, 79, 216, 0.12), transparent 18%),
-    radial-gradient(circle at 84% 26%, rgba(57, 230, 255, 0.12), transparent 18%);
+    radial-gradient(circle at 50% 18%, rgba(255, 79, 216, 0.08), transparent 18%),
+    linear-gradient(180deg, rgba(5, 1, 12, 0.12) 0%, rgba(5, 1, 12, 0.42) 76%, rgba(5, 1, 12, 0.64) 100%);
   pointer-events: none;
   z-index: 0;
 }
 
+.sunset-halo,
+.retro-palms,
+.retro-mountains,
 .sun-reflection {
-  position: absolute;
-  top: 19rem;
-  left: 50%;
-  width: min(18vw, 220px);
-  height: 280px;
-  transform: translateX(-55%);
-  background: linear-gradient(180deg, rgba(255, 177, 74, 0.28), transparent 82%);
-  filter: blur(18px);
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .glass-card,
@@ -499,36 +375,15 @@ textarea {
 }
 
 @media (max-width: 1024px) {
-  body::before {
-    opacity: 0.38;
-    transform: perspective(900px) rotateX(80deg) scale(1.9) translateY(30%);
-  }
-
-  .sunset-halo {
-    top: 3.75rem;
-    width: 340px;
-    height: 340px;
-    transform: translateX(-50%);
+  .dashboard-body::before {
+    background-position: center top;
+    background-size: auto 100%;
   }
 }
 
 @media (max-width: 768px) {
-  body::before {
-    clip-path: polygon(0 70%, 100% 70%, 100% 100%, 0 100%);
-    opacity: 0.28;
-  }
-
-  .retro-palms {
-    display: none;
-  }
-
-  .retro-mountains {
-    width: 60%;
-    bottom: 26%;
-    opacity: 0.28;
-  }
-
-  .sun-reflection {
-    display: none;
+  .dashboard-body::before {
+    background-position: 54% top;
+    background-size: auto 100%;
   }
 }

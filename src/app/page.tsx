@@ -1,25 +1,37 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { readGatewayState, listCronJobs, listSkills, listSessions } from "@/lib/hermes";
+import {
+  getHermesFleetSummary,
+  listCronJobsAcrossInstances,
+  listHermesInstances,
+  listPlatformConnectionsAcrossInstances,
+  listSessionsAcrossInstances,
+  listSkills,
+  type PlatformConnectionInfo,
+  readGatewayState,
+} from "@/lib/hermes";
 import Card from "@/components/Card";
 import StatusBadge from "@/components/StatusBadge";
 import WeatherWidget from "@/components/WeatherWidget";
 import GatewayControls from "@/components/GatewayControls";
 import QuickActionsPanel from "@/components/QuickActionsPanel";
+import InstancesPanel from "@/components/InstancesPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const gateway = readGatewayState();
-  const cronJobs = listCronJobs();
+  const fleet = getHermesFleetSummary();
+  const cronJobs = listCronJobsAcrossInstances();
+  const instances = listHermesInstances();
+  const platformConnections = listPlatformConnectionsAcrossInstances();
   const skills = listSkills();
-  const sessions = listSessions();
+  const sessions = listSessionsAcrossInstances();
 
   const totalSkills = skills.reduce((acc, cat) => acc + cat.skills.length, 0);
   const activeJobs = cronJobs.filter((j) => j.status === "active").length;
   const cronSessions = sessions.filter((s) => s.isCron).length;
   const recentSessions = sessions.slice(0, 8);
-  const platformEntries = gateway?.platforms ? Object.entries(gateway.platforms) : [];
   const featuredJobs = cronJobs.slice(0, 5);
   const skillSpotlight = skills
     .slice(0, 7)
@@ -31,16 +43,19 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      label: "Gateway",
-      value: gateway?.gateway_state || "unknown",
-      sub: gateway?.start_time ? `Started ${new Date(gateway.start_time).toLocaleString()}` : "Awaiting gateway heartbeat",
+      label: "Fleet",
+      value: fleet.state,
+      sub:
+        fleet.totalInstances > 0
+          ? `${fleet.runningInstances}/${fleet.totalInstances} runtimes live`
+          : "Awaiting runtime discovery",
       variant: "status" as const,
       icon: <CircuitGlyph />,
     },
     {
       label: "Cron Jobs",
       value: `${activeJobs}`,
-      sub: `${cronJobs.length} total`,
+      sub: `${cronJobs.length} total across ${instances.length} runtimes`,
       variant: "metric" as const,
       icon: <MiniBars colorA="#74f5ff" colorB="#5f8bff" />,
     },
@@ -54,7 +69,7 @@ export default async function DashboardPage() {
     {
       label: "Sessions",
       value: `${sessions.length}`,
-      sub: `${cronSessions} cron runs`,
+      sub: `${cronSessions} cron runs across the fleet`,
       variant: "metric" as const,
       icon: <MiniBars colorA="#39e6ff" colorB="#ff6be9" tall />,
     },
@@ -63,12 +78,6 @@ export default async function DashboardPage() {
   return (
     <div className="dashboard-main pb-10">
       <div className="hero-haze" />
-      <div className="sunset-halo" />
-      <div className="sun-reflection" />
-      <div className="retro-palms left" />
-      <div className="retro-palms right" />
-      <div className="retro-mountains left" />
-      <div className="retro-mountains right" />
 
       <div className="page-shell relative z-10 space-y-6">
         <div className="fade-in rounded-full border border-[rgba(57,230,255,0.2)] bg-[rgba(15,5,27,0.58)] px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-[#eec8ea] shadow-[inset_0_0_24px_rgba(57,230,255,0.05)]">
@@ -78,7 +87,8 @@ export default async function DashboardPage() {
               Herminator Operator Dashboard
             </span>
             <span>Realtime Hermes Surface</span>
-            <span>Telegram + Cron + Sessions</span>
+            <span>{fleet.runningInstances}/{fleet.totalInstances} Instances Live</span>
+            <span>{fleet.totalJobs} Scheduled Jobs</span>
             <span className="text-[#7aefff]">Neon Deck Online</span>
           </div>
         </div>
@@ -89,7 +99,7 @@ export default async function DashboardPage() {
           <div className="max-w-3xl">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.42em] text-[#ffcaef]">Dashboard</p>
             <h1 className="headline-display glow-text text-4xl font-black text-white md:text-5xl">
-              Hermes command dashboard
+              Herminator Control Center
             </h1>
             <p className="mt-3 max-w-2xl text-[15px] leading-7 text-[#f6c8ea]">
               Live gateway health, cron activity, skills, and sessions in one operating view.
@@ -120,7 +130,7 @@ export default async function DashboardPage() {
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.16fr_1fr]">
           <Card title="Platform Status" className="fade-in fade-in-delay-1 min-h-[360px]">
-            <PlatformMatrix entries={platformEntries} gateway={gateway} />
+            <PlatformMatrix connections={platformConnections} />
           </Card>
 
           <div className="space-y-5">
@@ -162,6 +172,15 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="fade-in fade-in-delay-4">
+          <Card
+            title="Instances & Sidecars"
+            action={<Link href="/config" className="text-xs text-[#8beeff] hover:text-white">Runtime matrix -&gt;</Link>}
+          >
+            <InstancesPanel instances={instances} />
+          </Card>
         </section>
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.95fr_1.05fr]">
@@ -229,47 +248,70 @@ function StatPanel({
 }
 
 function PlatformMatrix({
-  entries,
-  gateway,
+  connections,
 }: {
-  entries: Array<[string, { state: string; updated_at: string }]>;
-  gateway: ReturnType<typeof readGatewayState>;
+  connections: PlatformConnectionInfo[];
 }) {
-  if (entries.length === 0) {
+  if (connections.length === 0) {
     return <p className="text-sm text-[#f7d0ef]">No platform data available.</p>;
   }
+
+  const telegramConnections = connections.filter((connection) => connection.platform === "telegram");
+  const connectedTelegramCount = telegramConnections.filter((connection) => connection.state === "connected").length;
+  const issueCount = connections.filter((connection) => connection.hasError).length;
 
   return (
     <div className="relative overflow-hidden rounded-[22px] border border-[rgba(57,230,255,0.14)] bg-[linear-gradient(180deg,rgba(10,3,19,0.65),rgba(18,5,30,0.72))] p-4">
       <div className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,rgba(255,255,255,0.06)_0_1px,transparent_1px_26px),linear-gradient(transparent_62%,rgba(57,230,255,0.14)_62%,rgba(57,230,255,0.24)_63%,transparent_64%)] opacity-35" />
+      <div className="relative mb-4 flex flex-wrap gap-2">
+        <span className="badge-pill bg-[rgba(57,230,255,0.08)] text-[#8defff] border-[rgba(57,230,255,0.18)]">
+          {connectedTelegramCount}/{telegramConnections.length || 0} telegram live
+        </span>
+        <span className="badge-pill bg-[rgba(255,79,216,0.08)] text-[#ffd0ef] border-[rgba(255,79,216,0.18)]">
+          {connections.length} adapters
+        </span>
+        {issueCount > 0 && (
+          <span className="badge-pill bg-[rgba(255,132,121,0.12)] text-[#ffb6b6] border-[rgba(255,132,121,0.22)]">
+            {issueCount} issue{issueCount === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
       <div className="relative space-y-3">
-        {entries.map(([name, info]) => (
+        {connections.map((connection) => (
           <div
-            key={name}
+            key={`${connection.instance}:${connection.platform}`}
             className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(18,8,33,0.45)] px-3 py-3 backdrop-blur-sm"
           >
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[rgba(57,230,255,0.18)] bg-[rgba(57,230,255,0.08)] text-xs font-black uppercase text-[#9cf6ff]">
-              {name.slice(0, 2)}
+              {connection.platform.slice(0, 2)}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-white">{name}</p>
-              <p className="text-xs text-[#d7b3de]">{new Date(info.updated_at).toLocaleString()}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate text-base font-semibold text-white">{connection.platform}</p>
+                <span className="badge-pill bg-[rgba(255,79,216,0.08)] text-[#ffd0ef] border-[rgba(255,79,216,0.18)] text-[10px]">
+                  {connection.instance}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-[#d7b3de]">
+                {connection.updatedAt ? new Date(connection.updatedAt).toLocaleString() : "No timestamp"}
+              </p>
+              {connection.detail && (
+                <p className={`mt-1 text-[11px] uppercase tracking-[0.14em] ${
+                  connection.hasError ? "text-[#ffb6b6]" : "text-[#98efff]"
+                }`}>
+                  {connection.detail}
+                </p>
+              )}
             </div>
-            <StatusBadge status={info.state} />
+            <StatusBadge status={connection.state} />
           </div>
         ))}
       </div>
-      {gateway && (
-        <div className="relative mt-5 flex flex-wrap gap-5 border-t border-[rgba(255,255,255,0.08)] pt-3 text-xs uppercase tracking-[0.18em] text-[#d7b3de]">
-          <span>PID {gateway.pid}</span>
-          <span>Updated {new Date(gateway.updated_at).toLocaleString()}</span>
-        </div>
-      )}
     </div>
   );
 }
 
-function JobShowcase({ jobs }: { jobs: ReturnType<typeof listCronJobs> }) {
+function JobShowcase({ jobs }: { jobs: ReturnType<typeof listCronJobsAcrossInstances> }) {
   if (jobs.length === 0) {
     return <p className="text-sm text-[#f7d0ef]">No cron jobs configured.</p>;
   }
@@ -288,6 +330,9 @@ function JobShowcase({ jobs }: { jobs: ReturnType<typeof listCronJobs> }) {
               <p className="truncate text-lg font-semibold text-white">{job.name}</p>
               <p className="mt-1 text-xs text-[#ffd7f3]">{job.repeat || job.schedule}</p>
               <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-[#d5b0dd]">
+                <span className="rounded-full border border-[rgba(57,230,255,0.18)] bg-[rgba(57,230,255,0.08)] px-2 py-0.5 text-[#91efff]">
+                  {job.instance}
+                </span>
                 <span>{job.schedule}</span>
                 {job.nextRun && <span>Next: {job.nextRun}</span>}
               </div>
@@ -346,7 +391,7 @@ function SkillSpectrum({
   );
 }
 
-function SessionDeck({ sessions }: { sessions: ReturnType<typeof listSessions> }) {
+function SessionDeck({ sessions }: { sessions: ReturnType<typeof listSessionsAcrossInstances> }) {
   if (sessions.length === 0) {
     return <p className="text-sm text-[#f7d0ef]">No recent sessions found.</p>;
   }
@@ -355,8 +400,8 @@ function SessionDeck({ sessions }: { sessions: ReturnType<typeof listSessions> }
     <div className="space-y-3">
       {sessions.map((session, index) => (
         <Link
-          key={session.name}
-          href={`/sessions/${encodeURIComponent(session.name)}`}
+          key={`${session.homeDir}:${session.name}`}
+          href={`/sessions/${encodeURIComponent(session.name)}?home=${encodeURIComponent(session.homeDir)}`}
           className="group flex items-center justify-between gap-4 rounded-[22px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(90deg,rgba(18,8,33,0.86),rgba(43,12,67,0.66))] px-4 py-4 hover:border-[rgba(57,230,255,0.24)]"
         >
           <div className="flex min-w-0 items-center gap-4">
@@ -365,7 +410,9 @@ function SessionDeck({ sessions }: { sessions: ReturnType<typeof listSessions> }
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white group-hover:text-[#98f4ff]">{session.name}</p>
-              <p className="mt-1 text-xs text-[#f6c8ea]">{session.date.toLocaleString()}</p>
+              <p className="mt-1 text-xs text-[#f6c8ea]">
+                {session.instance} · {session.date.toLocaleString()}
+              </p>
             </div>
           </div>
           <div className="text-right text-xs text-[#d6b0de]">

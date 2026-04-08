@@ -1,4 +1,4 @@
-import { listCronJobs } from "@/lib/hermes";
+import { listCronJobsAcrossInstances, listHermesInstances } from "@/lib/hermes";
 import Card from "@/components/Card";
 import CronJobsTable from "@/components/CronJobsTable";
 import PageHero from "@/components/PageHero";
@@ -6,7 +6,8 @@ import PageHero from "@/components/PageHero";
 export const dynamic = "force-dynamic";
 
 export default async function CronPage() {
-  const jobs = listCronJobs();
+  const jobs = listCronJobsAcrossInstances();
+  const instances = listHermesInstances();
   const activeCount = jobs.filter((j) => j.status === "active").length;
   const pausedCount = jobs.filter((j) => j.status === "paused").length;
 
@@ -28,6 +29,9 @@ export default async function CronPage() {
             )}
             <span className="rounded-full border border-[rgba(57,230,255,0.15)] bg-[rgba(57,230,255,0.06)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#8ceeff]">
               {jobs.length} total jobs
+            </span>
+            <span className="rounded-full border border-[rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffd0ef]">
+              {instances.length} instances
             </span>
           </>
         }

@@ -5,16 +5,33 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navItems } from "@/components/navItems";
 
-export default function MobileNav() {
+interface FleetStatus {
+  state: string;
+  runningInstances: number;
+  totalInstances: number;
+  totalJobs: number;
+}
+
+export default function MobileNav({ initialFleet }: { initialFleet?: FleetStatus | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [gatewayStatus, setGatewayStatus] = useState<string>("unknown");
+  const [fleet, setFleet] = useState<FleetStatus>({
+    state: initialFleet?.state || "unknown",
+    runningInstances: initialFleet?.runningInstances || 0,
+    totalInstances: initialFleet?.totalInstances || 0,
+    totalJobs: initialFleet?.totalJobs || 0,
+  });
 
   useEffect(() => {
     fetch("/api/gateway")
       .then((r) => r.json())
-      .then((d) => setGatewayStatus(d.state || "unknown"))
-      .catch(() => setGatewayStatus("error"));
+      .then((d) => setFleet({
+        state: d.state || "unknown",
+        runningInstances: Number(d.runningInstances || 0),
+        totalInstances: Number(d.totalInstances || 0),
+        totalJobs: Number(d.totalJobs || 0),
+      }))
+      .catch(() => setFleet((current) => ({ ...current, state: "error" })));
   }, []);
 
   useEffect(() => {
@@ -30,9 +47,9 @@ export default function MobileNav() {
     };
   }, [open]);
 
-  const statusTone = gatewayStatus === "running"
+  const statusTone = fleet.state === "running"
     ? "text-emerald-300"
-    : gatewayStatus === "error" || gatewayStatus === "stopped"
+    : fleet.state === "error" || fleet.state === "stopped"
       ? "text-red-300"
       : "text-amber-300";
 
@@ -53,9 +70,12 @@ export default function MobileNav() {
           <div className="text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#ffd0ef]">Herminator</p>
             <p className="text-sm font-semibold text-white">Operator Dashboard</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#cfa9df]">
+              {fleet.runningInstances}/{fleet.totalInstances} live
+            </p>
           </div>
           <div className={`rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(15,5,27,0.82)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${statusTone}`}>
-            {gatewayStatus}
+            {fleet.state}
           </div>
         </div>
       </div>
@@ -89,7 +109,10 @@ export default function MobileNav() {
             <div className="border-b border-[rgba(255,79,216,0.08)] px-5 py-4">
               <div className="rounded-2xl border border-[rgba(57,230,255,0.16)] bg-[rgba(57,230,255,0.06)] px-4 py-3">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-[#d9b1df]">Gateway State</p>
-                <p className={`mt-2 text-lg font-semibold ${statusTone}`}>{gatewayStatus}</p>
+                <p className={`mt-2 text-lg font-semibold ${statusTone}`}>{fleet.state}</p>
+                <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#d6afd7]">
+                  {fleet.runningInstances}/{fleet.totalInstances} live · {fleet.totalJobs} jobs
+                </p>
               </div>
             </div>
 

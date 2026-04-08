@@ -1,13 +1,14 @@
-import { readConfig, readEnvVars } from "@/lib/hermes";
+import { listHermesInstances, readConfig, readEnvVars } from "@/lib/hermes";
 import Card from "@/components/Card";
 import PageHero from "@/components/PageHero";
-import ProfilesPanel from "@/components/ProfilesPanel";
+import InstancesPanel from "@/components/InstancesPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfigPage() {
   const config = readConfig();
   const envVars = readEnvVars();
+  const instances = listHermesInstances();
 
   return (
     <div className="space-y-6">
@@ -23,13 +24,16 @@ export default async function ConfigPage() {
             <span className="rounded-full border border-[rgba(255,79,216,0.18)] bg-[rgba(255,79,216,0.08)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#ffd0ef]">
               profiles and runtime
             </span>
+            <span className="rounded-full border border-[rgba(89,242,163,0.28)] bg-[rgba(23,73,53,0.34)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#bdfdd8]">
+              {instances.length} instances
+            </span>
           </>
         }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Profiles" className="lg:col-span-2">
-          <ProfilesPanel />
+        <Card title="Instances & Sidecars" className="lg:col-span-2">
+          <InstancesPanel instances={instances} />
         </Card>
 
         {/* Agent Settings */}

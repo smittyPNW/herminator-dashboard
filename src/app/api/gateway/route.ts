@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
-import { readGatewayState, gatewayControl } from "@/lib/hermes";
+import { gatewayControl, getHermesFleetSummary, readGatewayState } from "@/lib/hermes";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const state = readGatewayState();
+  const fleet = getHermesFleetSummary();
   if (!state) {
-    return NextResponse.json({ state: "unknown", platforms: {} });
+    return NextResponse.json({
+      state: fleet.state || "unknown",
+      platforms: {},
+      runningInstances: fleet.runningInstances,
+      totalInstances: fleet.totalInstances,
+      totalJobs: fleet.totalJobs,
+      connectedPlatforms: fleet.connectedPlatforms,
+      updated_at: fleet.updatedAt,
+    });
   }
   return NextResponse.json({
     state: state.gateway_state,
@@ -14,6 +23,10 @@ export async function GET() {
     platforms: state.platforms,
     updated_at: state.updated_at,
     start_time: state.start_time,
+    runningInstances: fleet.runningInstances,
+    totalInstances: fleet.totalInstances,
+    totalJobs: fleet.totalJobs,
+    connectedPlatforms: fleet.connectedPlatforms,
   });
 }
 
