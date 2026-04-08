@@ -14,6 +14,8 @@ interface CronJob {
   nextRun: string;
   deliver: string;
   skills: string[];
+  instance: string;
+  homeDir: string;
 }
 
 export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
@@ -23,7 +25,7 @@ export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
   const [error, setError] = useState<string>("");
   const [, startTransition] = useTransition();
 
-  async function act(jobId: string, verb: "pause" | "resume" | "run" | "remove") {
+  async function act(jobId: string, homeDir: string, verb: "pause" | "resume" | "run" | "remove") {
     setBusyId(`${jobId}:${verb}`);
     setMessage("");
     setError("");
@@ -31,7 +33,7 @@ export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cronAction", jobId, verb }),
+        body: JSON.stringify({ action: "cronAction", jobId, verb, homeDir }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -60,6 +62,7 @@ export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Name</th>
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">ID</th>
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Status</th>
+              <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Instance</th>
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Schedule</th>
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Deliver</th>
               <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d7b3de]">Actions</th>
@@ -92,6 +95,11 @@ export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
                   <StatusBadge status={job.status} />
                 </td>
                 <td className="px-5 py-4 text-sm text-[#f0c8ea]">
+                  <span className="rounded-full border border-[rgba(57,230,255,0.18)] bg-[rgba(57,230,255,0.07)] px-2.5 py-1 text-[11px] text-[#8defff]">
+                    {job.instance}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-sm text-[#f0c8ea]">
                   <div>{job.schedule}</div>
                   {job.repeat && <div className="mt-1 text-xs text-[#d6b0de]">{job.repeat}</div>}
                 </td>
@@ -99,19 +107,19 @@ export default function CronJobsTable({ jobs }: { jobs: CronJob[] }) {
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">
                     {job.status === "active" ? (
-                      <ActionButton onClick={() => act(job.id, "pause")} busy={busyId === `${job.id}:pause`}>
+                      <ActionButton onClick={() => act(job.id, job.homeDir, "pause")} busy={busyId === `${job.id}:pause`}>
                         Pause
                       </ActionButton>
                     ) : (
-                      <ActionButton onClick={() => act(job.id, "resume")} busy={busyId === `${job.id}:resume`}>
+                      <ActionButton onClick={() => act(job.id, job.homeDir, "resume")} busy={busyId === `${job.id}:resume`}>
                         Resume
                       </ActionButton>
                     )}
-                    <ActionButton onClick={() => act(job.id, "run")} busy={busyId === `${job.id}:run`}>
+                    <ActionButton onClick={() => act(job.id, job.homeDir, "run")} busy={busyId === `${job.id}:run`}>
                       Run Now
                     </ActionButton>
                     <button
-                      onClick={() => act(job.id, "remove")}
+                      onClick={() => act(job.id, job.homeDir, "remove")}
                       disabled={Boolean(busyId)}
                       className="btn-danger px-3 py-2 text-xs disabled:opacity-40"
                     >

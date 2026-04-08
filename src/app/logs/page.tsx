@@ -1,19 +1,35 @@
-import { listLogs, listSessions } from "@/lib/hermes";
+import { listHermesInstances, listLogsAcrossInstances, listSessionsAcrossInstances } from "@/lib/hermes";
 import Card from "@/components/Card";
+import PageHero from "@/components/PageHero";
 
 export const dynamic = "force-dynamic";
 
 export default async function LogsPage() {
-  const logs = listLogs();
-  const sessions = listSessions();
+  const logs = listLogsAcrossInstances();
+  const sessions = listSessionsAcrossInstances();
+  const instances = listHermesInstances();
   const cronSessions = sessions.filter((s) => s.isCron).slice(0, 20);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white glow-text">Logs</h1>
-        <p className="text-[#2a3f58] text-sm mt-1">Gateway logs and cron run history</p>
-      </div>
+      <PageHero
+        eyebrow="Logs"
+        title="Runtime tails and cron traces"
+        description="Inspect gateway activity and recent cron output across the full Hermes fleet without hopping between sidecar homes."
+        stats={
+          <>
+            <span className="badge-pill bg-[rgba(0,212,255,0.06)] text-[#00d4ff] border-[rgba(0,212,255,0.15)]">
+              {logs.length} log files
+            </span>
+            <span className="badge-pill bg-[rgba(251,191,36,0.06)] text-[#fbbf24] border-[rgba(251,191,36,0.15)]">
+              {cronSessions.length} recent cron runs
+            </span>
+            <span className="badge-pill bg-[rgba(255,79,216,0.08)] text-[#ffd0ef] border-[rgba(255,79,216,0.18)]">
+              {instances.length} instances
+            </span>
+          </>
+        }
+      />
 
       {/* Gateway Logs */}
       <Card title="Gateway Logs">
@@ -24,7 +40,7 @@ export default async function LogsPage() {
         ) : (
           <div className="space-y-5">
             {logs.map((log) => (
-              <div key={log.name}>
+              <div key={`${log.homeDir}:${log.name}`}>
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-lg bg-[rgba(0,212,255,0.04)] border border-[rgba(0,212,255,0.06)] flex items-center justify-center">
@@ -33,6 +49,9 @@ export default async function LogsPage() {
                       </svg>
                     </div>
                     <span className="text-sm text-[#a0aec0] font-medium">{log.name}</span>
+                    <span className="badge-pill bg-[rgba(255,79,216,0.08)] text-[#ffd0ef] border-[rgba(255,79,216,0.18)] text-[10px]">
+                      {log.instance}
+                    </span>
                     <span className="text-[10px] text-[#2a3f58] font-mono">{formatSize(log.size)}</span>
                   </div>
                   <span className="text-[10px] text-[#2a3f58] font-mono">{log.modified.toLocaleString()}</span>
@@ -56,20 +75,26 @@ export default async function LogsPage() {
               <thead>
                 <tr className="border-b border-[rgba(0,212,255,0.06)]">
                   <th className="text-left px-5 py-3 text-[10px] font-semibold text-[#2a3f58] uppercase tracking-[0.15em]">Session File</th>
+                  <th className="text-left px-5 py-3 text-[10px] font-semibold text-[#2a3f58] uppercase tracking-[0.15em]">Instance</th>
                   <th className="text-left px-5 py-3 text-[10px] font-semibold text-[#2a3f58] uppercase tracking-[0.15em]">Date</th>
                   <th className="text-right px-5 py-3 text-[10px] font-semibold text-[#2a3f58] uppercase tracking-[0.15em]">Size</th>
                 </tr>
               </thead>
               <tbody>
                 {cronSessions.map((session) => (
-                  <tr key={session.name} className="border-b border-[rgba(0,212,255,0.03)] table-row-hover">
+                  <tr key={`${session.homeDir}:${session.name}`} className="border-b border-[rgba(0,212,255,0.03)] table-row-hover">
                     <td className="px-5 py-3">
                       <a
-                        href={`/sessions/${encodeURIComponent(session.name)}`}
+                        href={`/sessions/${encodeURIComponent(session.name)}?home=${encodeURIComponent(session.homeDir)}`}
                         className="text-xs font-mono text-[#718096] hover:text-[#00d4ff] transition-colors"
                       >
                         {session.name}
                       </a>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="badge-pill bg-[rgba(255,79,216,0.08)] text-[#ffd0ef] border-[rgba(255,79,216,0.18)] text-[10px]">
+                        {session.instance}
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       <span className="text-xs text-[#4a5568] font-mono">{session.date.toLocaleString()}</span>

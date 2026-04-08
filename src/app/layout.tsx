@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { isAuthenticated } from "@/lib/auth";
+import { getHermesFleetSummary } from "@/lib/hermes";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 export const metadata: Metadata = {
@@ -11,14 +12,15 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const authed = await isAuthenticated();
+  const fleet = authed ? getHermesFleetSummary() : null;
 
   return (
     <html lang="en" className="dark">
-      <body className="relative overflow-x-hidden antialiased">
+      <body className={`relative overflow-x-hidden antialiased ${authed ? "dashboard-body" : ""}`}>
         {authed ? (
           <div className="relative z-10 min-h-screen">
-            <MobileNav />
-            <Sidebar />
+            <MobileNav initialFleet={fleet} />
+            <Sidebar initialFleet={fleet} />
             <main className="px-4 pb-7 pt-24 md:ml-[244px] md:px-7 md:pt-7 xl:px-8">
               <div className="mx-auto max-w-[1480px] fade-in">
                 {children}

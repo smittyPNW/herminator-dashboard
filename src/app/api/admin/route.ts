@@ -4,6 +4,7 @@ import {
   createProfile,
   cronAction,
   installSkill,
+  listHermesInstances,
   listProfiles,
   searchSkills,
   useProfile,
@@ -16,6 +17,10 @@ export async function GET(request: NextRequest) {
 
   if (action === "profiles") {
     return NextResponse.json({ profiles: listProfiles() });
+  }
+
+  if (action === "instances") {
+    return NextResponse.json({ instances: listHermesInstances() });
   }
 
   if (action === "skillsSearch") {
@@ -66,11 +71,12 @@ export async function POST(request: Request) {
 
     if (action === "cronAction") {
       const jobId = String(body.jobId || "").trim();
+      const homeDir = String(body.homeDir || "").trim();
       const verb = body.verb as "pause" | "resume" | "run" | "remove";
       if (!jobId || !["pause", "resume", "run", "remove"].includes(verb)) {
         return NextResponse.json({ error: "Job ID and valid verb are required" }, { status: 400 });
       }
-      const result = cronAction(verb, jobId);
+      const result = cronAction(verb, jobId, homeDir || undefined);
       return NextResponse.json(result, { status: result.success ? 200 : 500 });
     }
 

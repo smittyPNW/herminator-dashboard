@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useDeferredValue, useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 interface SessionMessage {
   role: string;
@@ -14,6 +14,8 @@ interface SessionData {
   date: string;
   size: number;
   isCron: boolean;
+  instance: string;
+  homeDir: string;
   messages: SessionMessage[];
   messageCount: number;
 }
@@ -21,22 +23,26 @@ interface SessionData {
 export default function SessionDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const sessionId = params.id as string;
+  const homeDir = searchParams.get("home");
+  const deferredQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
-    fetch(`/api/sessions/${encodeURIComponent(sessionId)}`)
+    const query = homeDir ? `?home=${encodeURIComponent(homeDir)}` : "";
+    fetch(`/api/sessions/${encodeURIComponent(sessionId)}${query}`)
       .then((r) => {
         if (!r.ok) throw new Error("Session not found");
         return r.json();
       })
       .then((d) => { setSession(d); setLoading(false); })
       .catch((e) => { setError(e.message); setLoading(false); });
-  }, [sessionId]);
+  }, [sessionId, homeDir]);
 
   if (loading) {
     return (
@@ -77,9 +83,9 @@ export default function SessionDetailPage() {
     );
   }
 
-  const filteredMessages = searchQuery
+  const filteredMessages = deferredQuery
     ? session.messages.filter((m) =>
-        m.content.toLowerCase().includes(searchQuery.toLowerCase())
+        m.content.toLowerCase().includes(deferredQuery.toLowerCase())
       )
     : session.messages;
 
@@ -96,6 +102,7 @@ export default function SessionDetailPage() {
           <div>
             <h1 className="text-xl font-bold text-white glow-text">Session Viewer</h1>
             <p className="text-[10px] text-[#2a3f58] font-mono mt-0.5">{decodeURIComponent(sessionId)}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#d6afd7]">{session.instance}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

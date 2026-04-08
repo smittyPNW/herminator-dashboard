@@ -5,28 +5,54 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navItems } from "@/components/navItems";
 
-export default function Sidebar() {
+interface FleetStatus {
+  state: string;
+  runningInstances: number;
+  totalInstances: number;
+  totalJobs: number;
+  connectedPlatforms: number;
+}
+
+export default function Sidebar({ initialFleet }: { initialFleet?: FleetStatus | null }) {
   const pathname = usePathname();
-  const [gatewayStatus, setGatewayStatus] = useState<string>("unknown");
+  const [fleet, setFleet] = useState<FleetStatus>({
+    state: initialFleet?.state || "unknown",
+    runningInstances: initialFleet?.runningInstances || 0,
+    totalInstances: initialFleet?.totalInstances || 0,
+    totalJobs: initialFleet?.totalJobs || 0,
+    connectedPlatforms: initialFleet?.connectedPlatforms || 0,
+  });
 
   useEffect(() => {
     fetch("/api/gateway")
       .then((r) => r.json())
-      .then((d) => setGatewayStatus(d.state || "unknown"))
-      .catch(() => setGatewayStatus("error"));
+      .then((d) => setFleet({
+        state: d.state || "unknown",
+        runningInstances: Number(d.runningInstances || 0),
+        totalInstances: Number(d.totalInstances || 0),
+        totalJobs: Number(d.totalJobs || 0),
+        connectedPlatforms: Number(d.connectedPlatforms || 0),
+      }))
+      .catch(() => setFleet((current) => ({ ...current, state: "error" })));
 
     const interval = setInterval(() => {
       fetch("/api/gateway")
         .then((r) => r.json())
-        .then((d) => setGatewayStatus(d.state || "unknown"))
+        .then((d) => setFleet({
+          state: d.state || "unknown",
+          runningInstances: Number(d.runningInstances || 0),
+          totalInstances: Number(d.totalInstances || 0),
+          totalJobs: Number(d.totalJobs || 0),
+          connectedPlatforms: Number(d.connectedPlatforms || 0),
+        }))
         .catch(() => {});
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const statusColor = gatewayStatus === "running"
+  const statusColor = fleet.state === "running"
     ? "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-    : gatewayStatus === "error" || gatewayStatus === "stopped"
+    : fleet.state === "error" || fleet.state === "stopped"
     ? "bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.6)]"
     : "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]";
 
@@ -57,11 +83,16 @@ export default function Sidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
-            <span className="text-[10px] uppercase tracking-[0.22em] text-[#b184c9]">Category</span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-[#b184c9]">Fleet</span>
           </div>
           <span className={`text-[10px] font-mono ${
-            gatewayStatus === "running" ? "text-emerald-300" : "text-[#cfa9df]"
-          }`}>{gatewayStatus}</span>
+            fleet.state === "running" ? "text-emerald-300" : "text-[#cfa9df]"
+          }`}>{fleet.state}</span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] uppercase tracking-[0.18em] text-[#cfa9df]">
+          <span>{fleet.runningInstances}/{fleet.totalInstances} live</span>
+          <span>{fleet.totalJobs} jobs</span>
+          <span>{fleet.connectedPlatforms} links</span>
         </div>
       </div>
 
