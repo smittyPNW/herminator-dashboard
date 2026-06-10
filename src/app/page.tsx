@@ -6,6 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import WeatherWidget from "@/components/WeatherWidget";
 import GatewayControls from "@/components/GatewayControls";
 import QuickActionsPanel from "@/components/QuickActionsPanel";
+import SolarAuroraWidget from "@/components/SolarAuroraWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +117,42 @@ export default async function DashboardPage() {
               delayClass={`fade-in-delay-${Math.min(index + 1, 4)}`}
             />
           ))}
+        </section>
+
+        <section className="fade-in fade-in-delay-2 grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1.4fr]">
+          <SolarAuroraWidget />
+          <div className="synth-panel p-5">
+            <div className="card-title mb-2">Space Weather Intel</div>
+            <p className="text-sm text-[#d6b0de] leading-relaxed">
+              Solar flares are sudden eruptions of electromagnetic energy from the Sun&apos;s surface. When
+              high-energy particles reach Earth&apos;s magnetosphere, they excite atmospheric gases —
+              creating the Aurora Borealis.
+            </p>
+            <div className="mt-5 space-y-3">
+              {[
+                { cls: "A / B", desc: "Minor flares. Quiet aurora, visible only at high latitudes.", kp: "1–2", color: "#59f2a3" },
+                { cls: "C",     desc: "Moderate flares. Aurora may appear near polar regions.",      kp: "3–4", color: "#39e6ff" },
+                { cls: "M",     desc: "Strong flares. Aurora visible at mid-latitudes, vivid colors.", kp: "5–6", color: "#ffb14a" },
+                { cls: "X",     desc: "Extreme flares. Geomagnetic storm. Aurora at low latitudes.",  kp: "7–9", color: "#ff6b6b" },
+              ].map((row) => (
+                <div
+                  key={row.cls}
+                  className="flex items-start gap-3 rounded-2xl border border-[rgba(255,255,255,0.07)] bg-[rgba(14,5,26,0.55)] px-4 py-3"
+                >
+                  <div
+                    className="mt-0.5 flex h-8 w-12 shrink-0 items-center justify-center rounded-xl text-xs font-black"
+                    style={{ background: `${row.color}18`, border: `1px solid ${row.color}44`, color: row.color }}
+                  >
+                    {row.cls}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm text-[#f0daf5]">{row.desc}</p>
+                    <p className="mt-1 text-[11px] text-[#8d73a8]">Kp {row.kp}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.16fr_1fr]">
